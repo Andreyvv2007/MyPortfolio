@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Data;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
+﻿using System.Data;
 
 namespace ReadReportOZON
 {
-    internal class CreatDataTable
+    internal class DataTableFactory
     {
         public static decimal SoldQuantity { get; private set; }
         public static decimal SoldAmount { get; private set; }
@@ -18,7 +12,7 @@ namespace ReadReportOZON
 
         static string nameColumnAdd = "Прибыль с продажи (за шт.)";
 
-        public static DataTable NewTable(string[] textArr)
+        public static DataTable CreateDataTableWithColumns(string[] textArr)
         {
             DataTable dataTable = new DataTable("Resort");
 
@@ -33,14 +27,14 @@ namespace ReadReportOZON
             for(int i = 0; i <= textArr.Length; i++)
             {
                 column = new DataColumn();
-                if (i < 2) dataTable.Columns.Add(_Column_String(ref column, textArr[i]));
-                else if (i == textArr.Length) dataTable.Columns.Add(_Column_Decimal(column, nameColumnAdd));
-                else dataTable.Columns.Add(_Column_Decimal(column, textArr[i]));
+                if (i < 2) dataTable.Columns.Add(_CreateStringColumn(ref column, textArr[i]));
+                else if (i == textArr.Length) dataTable.Columns.Add(_CreateDecimalColumn(column, nameColumnAdd));
+                else dataTable.Columns.Add(_CreateDecimalColumn(column, textArr[i]));
             }
             return dataTable;
         }
 
-        static DataColumn _Column_String(ref DataColumn column, string name)
+        static DataColumn _CreateStringColumn(ref DataColumn column, string name)
         {
             column.DataType = Type.GetType("System.String");
             column.ColumnName = name;
@@ -49,7 +43,7 @@ namespace ReadReportOZON
             return column;
         }
 
-        static DataColumn _Column_Decimal(DataColumn column, string name)
+        static DataColumn _CreateDecimalColumn(DataColumn column, string name)
         {
             column.DataType = Type.GetType("System.Decimal");
             column.ColumnName = name;
@@ -58,7 +52,7 @@ namespace ReadReportOZON
             return column;
         }
 
-        public static DataRow AddRow(DataTable dataTable, string[] arrName, string name, string article, decimal price, int quantity, decimal amount, decimal commission, decimal logistics, decimal logisticsReturn)
+        public static DataRow AddRowAndUpdateStatistics(DataTable dataTable, string[] arrName, string name, string article, decimal price, int quantity, decimal amount, decimal commission, decimal logistics, decimal logisticsReturn)
         {
             DataRow _row = dataTable.NewRow();
             decimal profit = (amount - (commission + logistics + logisticsReturn)) / quantity;
@@ -81,7 +75,6 @@ namespace ReadReportOZON
 
             return _row;
         }
-
     }
 }
 

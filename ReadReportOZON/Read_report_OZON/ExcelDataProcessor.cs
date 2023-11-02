@@ -1,45 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using OfficeOpenXml;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.Xml.Linq;
-using OfficeOpenXml;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.RefAndLookup;
 
 namespace ReadReportOZON
 {
-    internal class ReadExelFile
+    internal class ExcelDataProcessor
     {
-        // Создайте DataTable для хранения данных из Excel
         static DataTable _dataTable = new DataTable();
 
-        static string _rowDataWithText = "01.2023";
+        static string _rowDataWithText = "01.1000";
         static ExcelWorksheet _worksheet;
         static int _rows;
         static int _cols;
 
         static List<string> _textToSearchForCells = new List<string> { "за период", "Товар", "Артикул", "Цена продавца", "Реализовано экземпляров", "Реализовано на сумму", "Сумма комиссии за продажу", "Расходы", "Расходы" };
         
-        //static int[] _сoordinatesOfTheDateCell = new int[2];
         static int _сoordinateNameCellFromExcelTableRow;
         static int[] _сoordinateNameCellFromExcelTableColumn = new int[_textToSearchForCells.Count - 1];
 
         static string[] _columnNameDataGridTable = new string[_сoordinateNameCellFromExcelTableColumn.Length];
 
 
-        public static DataTable ReadExel(string excelFilePath)
+        public static DataTable ReadExcelIntoDataTable(string excelFilePath)
         {
-            CreatingDataGridTableAndFillingInData(excelFilePath);
+            _ImportExcelDataToDataTable(excelFilePath);
 
             return _dataTable;
         }
 
-        static void CreatingDataGridTableAndFillingInData(string excelFilePath)
+        static void _ImportExcelDataToDataTable(string excelFilePath)
         {
             try
             {
@@ -47,33 +35,14 @@ namespace ReadReportOZON
                 {
                     _worksheet = package.Workbook.Worksheets[0];
 
-                    // Получаем количество строк и столбцов в листе
                     _rows = _worksheet.Dimension.Rows;
                     _cols = _worksheet.Dimension.Columns;
 
-                    // Поиск стартовых ячеек и столбцов
-                    for (_сoordinateNameCellFromExcelTableRow = 1; _сoordinateNameCellFromExcelTableRow < _rows && _textToSearchForCells.Count != 0; _сoordinateNameCellFromExcelTableRow++)
-                    {
-                        for (int j = 1; j < _cols; j++)
-                        {
-                            if (_сoordinateNameCellFromExcelTableRow < 4)
-                            {
-                                SearchCoordinatesOfACellWithADate(j);
-                            }
-                            else if (_textToSearchForCells.Count > 0)
-                            {
-                                SearchCoordinatesOfACellWithName(j);
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                    }
+                    _SearchForInitialCellsAndColumns();
 
-                    _dataTable = CreatDataTable.NewTable(_columnNameDataGridTable);
+                    _dataTable = DataTableFactory.CreateDataTableWithColumns(_columnNameDataGridTable);
 
-                    ReadNameCellExcelTableToAddInGridTable();
+                    _SetDataValuesInDataTableFromExcelTable();
                 }
             }
             catch (Exception ex)
@@ -82,12 +51,32 @@ namespace ReadReportOZON
             }
         }
 
-        //Поиск ячейки даты
-        static void SearchCoordinatesOfACellWithADate(int column)
+        static void _SearchForInitialCellsAndColumns()
         {
-            if (_worksheet.Cells[_сoordinateNameCellFromExcelTableRow, column].Text.IndexOf(_textToSearchForCells[0], 0) != -1) //Поиск ячейки даты
+            for (_сoordinateNameCellFromExcelTableRow = 1; _сoordinateNameCellFromExcelTableRow < _rows && _textToSearchForCells.Count > 0; _сoordinateNameCellFromExcelTableRow++)
             {
-                // добавил для проверки
+                for (int j = 1; j < _cols; j++)
+                {
+                    if (_сoordinateNameCellFromExcelTableRow < 4)
+                    {
+                        _SearchCoordinatesOfACellWithADate(j);
+                    }
+                    else if (_textToSearchForCells.Count > 0)
+                    {
+                        _SearchCoordinatesOfACellWithName(j);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        static void _SearchCoordinatesOfACellWithADate(int column)
+        {
+            if (_worksheet.Cells[_сoordinateNameCellFromExcelTableRow, column].Text.IndexOf(_textToSearchForCells[0], 0) != -1)
+            {
                 _rowDataWithText = _worksheet.Cells[_сoordinateNameCellFromExcelTableRow, column].Text;
 
                 _textToSearchForCells.RemoveAt(0);
@@ -95,8 +84,7 @@ namespace ReadReportOZON
             }
         }
 
-        // поиск нужных столбцов
-        static void SearchCoordinatesOfACellWithName(int column)
+        static void _SearchCoordinatesOfACellWithName(int column)
         {
             for(int i = 0; i < _textToSearchForCells.Count; i++) 
             {
@@ -114,16 +102,15 @@ namespace ReadReportOZON
             }
         }
 
-        static void ReadNameCellExcelTableToAddInGridTable()
+        static void _SetDataValuesInDataTableFromExcelTable()
         {
-            // Читаем данные из ячеек и выводим их в таблицу
             for (int row = _сoordinateNameCellFromExcelTableRow; row <= _rows; row++)
             {
                 if (!_worksheet.Cells[row, 2].Text.Equals("Итого"))
                 {  
                     decimal num = Decimal.TryParse(_worksheet.Cells[row, _сoordinateNameCellFromExcelTableColumn[7]].Text, out num) ? num : num = 0;
                     
-                    _dataTable.Rows.Add(CreatDataTable.AddRow(_dataTable, _columnNameDataGridTable,
+                    _dataTable.Rows.Add(DataTableFactory.AddRowAndUpdateStatistics(_dataTable, _columnNameDataGridTable,
                         _worksheet.Cells[row, _сoordinateNameCellFromExcelTableColumn[0]].Text,
                         _worksheet.Cells[row, _сoordinateNameCellFromExcelTableColumn[1]].Text,
                         Convert.ToDecimal(_worksheet.Cells[row, _сoordinateNameCellFromExcelTableColumn[2]].Value),
@@ -139,7 +126,7 @@ namespace ReadReportOZON
             }
         }
 
-        public static string[] ParseData()
+        public static string[] ParseDateToMonthYearArray()
         {
             string[] _monthYear = new string[4];
             
@@ -150,12 +137,12 @@ namespace ReadReportOZON
             int _numberMonth = Int32.Parse(_monthYear[0]);
 
             _monthYear[1] = ((_numberMonth + 2) / 3).ToString();
-            _monthYear[2] = _ConvertMonth(_numberMonth);
+            _monthYear[2] = _ConvertMonthToString(_numberMonth);
             _monthYear[3] = _data[1];
             return _monthYear;
         }
 
-        static string _ConvertMonth(int x)
+        static string _ConvertMonthToString(int x)
         {
             switch (x)
             {
