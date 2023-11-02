@@ -92,7 +92,7 @@
             открытьToolStripMenuItem.ShortcutKeys = Keys.F3;
             открытьToolStripMenuItem.Size = new Size(146, 22);
             открытьToolStripMenuItem.Text = "Открыть";
-            открытьToolStripMenuItem.Click += открытьToolStripMenuItem_Click;
+            открытьToolStripMenuItem.Click += openToolStripMenuItem_Click;
             // 
             // toolStripSeparator1
             // 

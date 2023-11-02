@@ -2,7 +2,6 @@ namespace ReadReportOZON
 {
     public partial class Form1 : Form
     {
-        // Укажите путь к файлу Excel
         string excelFilePath;// = "Otchet.xlsx";
         string[] data;
 
@@ -11,9 +10,8 @@ namespace ReadReportOZON
             InitializeComponent();
         }
 
-        private void открытьToolStripMenuItem_Click(object sender, EventArgs e)
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // Открываем диалоговое окно для выбора файла Excel
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "Excel Files|*.xls;*.xlsx;*.xlsm|All Files|*.*";
 
@@ -23,7 +21,6 @@ namespace ReadReportOZON
 
                 excelFilePath = openFileDialog.FileName;
                 
-                // Привяжите DataTable к DataGridView
                 dataGridView1.DataSource = ExcelDataProcessor.ReadExcelIntoDataTable(excelFilePath);
                 data = ExcelDataProcessor.ParseDateToMonthYearArray();
 
